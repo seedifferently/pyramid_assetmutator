@@ -18,7 +18,7 @@ Installation
 
 To install, simply::
 
-    pip install http://github.com/seedifferently/pyramid_assetmutator/archive/master.zip#egg=pyramid_assetmutator
+    pip install pyramid_assetmutator
 
 * You'll need to have `Python`_ 2.6+ and `pip`_ installed.
 

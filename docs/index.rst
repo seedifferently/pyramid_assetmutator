@@ -12,7 +12,7 @@ provide a basic and straightforward mechanism for asset *compilation* (e.g.
 CoffeeScript/LESS), *minification* (e.g. jsmin), and *optimization* (e.g.
 pngcrush).
 
-.. warning:: This package only supports Pyramid 1.3 and later.
+.. warning:: This package only supports Pyramid 1.3 or later.
 
 .. _Pyramid: http://www.pylonsproject.org/
 
@@ -22,7 +22,7 @@ Installation
 
 To install, simply::
 
-    pip install http://github.com/seedifferently/pyramid_assetmutator/archive/master.zip#egg=pyramid_assetmutator
+    pip install pyramid_assetmutator
 
 * You'll need to have `Python`_ 2.6+ and `pip`_ installed.
 
@@ -33,21 +33,22 @@ To install, simply::
 Setup
 -----
 
-Once ``pyramid_assetmutator`` is installed, you must include it into your
-Pyramid project's configuration. This is typically done using the
-``config.include`` mechanism in your project's ``__init__.py``:
+Once ``pyramid_assetmutator`` is installed, you must include it in your Pyramid
+project's configuration. This is typically done using Pyramid's
+:meth:`config.include <pyramid.config.Configurator.include>` mechanism in your
+project's ``__init__.py``:
 
 .. code-block:: python
 
     config = Configurator(...)
     config.include('pyramid_assetmutator')
 
-Next, you must assign one or more *mutators* via the
+Next, you must assign one or more *mutators* via the new
 :meth:`~pyramid_assetmutator.assign_assetmutator` configuration method, so that
 it knows what type of assets you want mutated. The configuration syntax for your
 Pyramid project's ``__init__.py`` is::
 
-    config.assign_assetmutator('CURRENT_EXTENSION', 'COMMAND', 'NEW_EXTENSION')
+    config.assign_assetmutator('CURRENT EXTENSION', 'COMMAND', 'NEW EXTENSION')
 
 For example, the following configuration would activate ``pyramid_assetmutator``
 and initialize mutators for CoffeeScript and LESS files (allowing them to be
@@ -64,7 +65,7 @@ compiled into the appropriate JavaScript and CSS):
 Usage
 -----
 
-Now that you have configured your mutators, you can use one of the provided view
+Once you have configured your mutators, you can use one of the provided view
 helper methods in your templates to reference (with Pyramid's `asset
 specification`_ syntax) and "mutate" (if needed) an asset.
 
@@ -84,6 +85,8 @@ Four view helper methods are provided depending on your desired results:
 
     .. autofunction:: assetmutator_assetpath
         :noindex:
+
+.. _asset specification: http://pyramid.readthedocs.org/en/latest/glossary.html#term-asset-specification
 
 
 Examples
@@ -120,18 +123,18 @@ minify the JavaScript file, you could do something like:
 
 .. code-block:: xml
 
-    <script src="${assetmutator_url(assetmutator_assetpath('pkg:static/js/test.coffee')}"
+    <script src="${assetmutator_url(assetmutator_assetpath('pkg:static/js/test.coffee'))}"
             type="text/javascript"></script>
 
-.. _asset specification: http://pyramid.readthedocs.org/en/latest/glossary.html#term-asset-specification
 .. _Chameleon: http://chameleon.repoze.org/
 
 
 Mutators
 --------
 
-You can assign as many mutators as you like using the configurator method, but
-it is important to keep in mind the following:
+You can assign as many mutators as you like using the
+``config.assign_assetmutator`` method, but it is important to keep in mind the
+following:
 
     * The mutator ``COMMAND`` must be installed, must be executable by the
       Pyramid process, and by default must *output the mutated data to stdout*.
@@ -194,7 +197,7 @@ file (in the app section representing your Pyramid app) using the
         filename matching the mutated version of the asset already exists.
         If set to ``mtime``, then only the last modified time will be checked.
         If set to ``checksum`` (slowest, but most reliable), then the file
-        contents will also be checked.
+        contents will be checked.
 
     ``assetmutator.asset_prefix``
         *Default: _*
@@ -206,8 +209,8 @@ file (in the app section representing your Pyramid app) using the
         
         By default, mutated files are stored in the same directory as their
         source files. If you would like to have all mutated files stored in a
-        specific directory, you can define a Pyramid asset path specification
-        here (e.g. ``pkg:static/cache/``).
+        specific directory, you can define a Pyramid asset specification here
+        (e.g. ``pkg:static/cache/``).
         
         .. note:: The specified path must be a valid `asset specification`_ that
                   matches a configured `static view`_, and must be writable by
@@ -217,14 +220,15 @@ file (in the app section representing your Pyramid app) using the
         *Default: true*
         
         Whether or not assets should be checked/mutated during each request
-        when the template language encounters one of the ``mutated_asset*``
+        when the template language encounters one of the ``assetmutator_*``
         methods.
 
     ``assetmutator.each_boot``
         *Default: false*
         
         Whether or not assets should be checked/mutated when the application
-        boots (uses the ``pyramid.events.ApplicationCreated`` event).
+        boots (uses Pyramid's :class:`~pyramid.events.ApplicationCreated`
+        event).
         
         .. note:: If set to true, then you must specify the ``asset_paths`` to
                   be checked (see below).
@@ -241,15 +245,14 @@ file (in the app section representing your Pyramid app) using the
 For example, if you wanted to only check/mutate assets on each boot (a good
 practice for production environments), and only wanted to process the ``js``
 and ``css`` directories, and would like each mutated ``_filename`` to be saved
-in a ``myapp:static/cache`` directory, then your ``.ini`` file could look
+in a ``myapp:static/cache/`` directory, then your ``.ini`` file could look
 something like:
 
 .. code-block:: ini
 
-    [app:myapp]
+    [app:main]
     ...other settings...
-    pyramid.includes = pyramid_assetmutator
-    assetmutator.mutated_path = myapp:static/cache
+    assetmutator.mutated_path = myapp:static/cache/
     assetmutator.each_request = false
     assetmutator.each_boot = true
     assetmutator.asset_paths = 
@@ -266,8 +269,8 @@ Asset Concatenation (a.k.a Asset Pipeline)
 A feature that is popular in some web frameworks (e.g. Ruby on Rails) is the
 ability to combine all assets that share a common type into a single file for
 sourcing within your views. Unfortunately, this functionality is currently
-beyond the scope of ``pyramid_assetmutator``. Please check out the
-pyramid_fantastic_ or pyramid_webassets_ packages instead.
+beyond the scope of ``pyramid_assetmutator``. Please have a look at the
+pyramid_fantastic_ and pyramid_webassets_ packages instead.
 
 .. _pyramid_fantastic: http://github.com/FormAlchemy/pyramid_fanstatic
 .. _pyramid_webassets: http://github.com/sontek/pyramid_webassets

@@ -72,8 +72,8 @@ def assign_assetmutator(config, ext, cmd, new_ext):
 
 def assetmutator_url(path, **kw):
     """
-    Returns a Pyramid ``static_url`` url of the mutated asset (and mutates the
-    asset if needed).
+    Returns a Pyramid :meth:`~pyramid.request.Request.static_url` of the mutated
+    asset (and mutates the asset if needed).
     
     :param path: The Pyramid asset path to process.
     :type path: string - Required
@@ -104,8 +104,8 @@ def assetmutator_url(path, **kw):
 
 def assetmutator_path(path, **kw):
     """
-    Returns a Pyramid ``static_path`` path of the mutated asset (and mutates
-    the asset if needed).
+    Returns a Pyramid :meth:`~pyramid.request.Request.static_path` of the
+    mutated asset (and mutates the asset if needed).
     
     :param path: The Pyramid asset path to process.
     :type path: string - Required
@@ -137,7 +137,7 @@ def assetmutator_source(path, **kw):
     """
     Returns the source data/contents of the mutated asset (and mutates the
     asset if needed). This is useful when you want to output inline data (e.g.
-    for inline javascript blocks).
+    for inline JavaScript blocks).
     
     :param path: The Pyramid asset path to process.
     :type path: string - Required
@@ -171,8 +171,8 @@ def assetmutator_source(path, **kw):
 
 def assetmutator_assetpath(path, **kw):
     """
-    Returns a Pyramid ``asset`` path such as ``pkg:static/path/to/file.ext``
-    (and mutates the asset if needed).
+    Returns a Pyramid `asset specification`_ such as
+    ``pkg:static/path/to/file.ext`` (and mutates the asset if needed).
     
     :param path: The Pyramid asset path to process.
     :type path: string - Required
@@ -190,6 +190,9 @@ def assetmutator_assetpath(path, **kw):
     
         config.assign_assetmutator('coffee', 'coffee -c -p', 'js')
         config.assign_assetmutator('js', 'uglifyjs', 'js')
+    
+    .. _asset specification: http://pyramid.readthedocs.org/en/latest/
+                             glossary.html#term-asset-specification
     """
     request = get_current_request()
     settings = request.registry.settings

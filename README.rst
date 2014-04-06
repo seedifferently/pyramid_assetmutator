@@ -1,5 +1,5 @@
 ================================================================================
-pyramid_assetmutator v0.1
+pyramid_assetmutator v0.2
 ================================================================================
 
 | Copyright: (c) 2014 Seth Davis
@@ -9,7 +9,7 @@ pyramid_assetmutator v0.1
 Synopsis
 ================================================================================
 
-pyramid_assetmutator provides automatic asset mutation for your Pyramid
+pyramid_assetmutator provides dynamic asset mutation for your Pyramid
 applications.
 
 
@@ -35,9 +35,9 @@ You can read the documentation at: http://pyramid_assetmutator.readthedocs.org/
 Known Issues and Limitations
 ================================================================================
 
-* Hasn't yet been tested against Python 3 (initial versions are working concepts
-  only).
-* Hasn't yet been tested against Unicode filenames (see above).
+* Experimental support for Py3k/pypy.
+* Doesn't clean up after itself (compiled/mutated assets aren't removed
+  automatically).
 * Hopefully obvious, but you have to actually have the specified compiler
   command installed and accessible from your working path in order for it to
   work.

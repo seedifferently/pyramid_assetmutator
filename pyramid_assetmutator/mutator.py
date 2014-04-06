@@ -6,14 +6,14 @@ class Mutator(object):
     """
     Mutator class for the pyramid_assetmutator add-on.
     """
-    def __init__(self, app_settings, path, **kw):
+    def __init__(self, request, path, **kw):
         """
         Initialize the Mutator class.
         
         Required parameters:
         
-        :type app_settings: dict
-        :param app_settings: The Pyramid application ``settings`` dictionary.
+        :type request: request
+        :param request: The Pyramid application's current ``request``.
         
         :type path: string
         :param path: The Pyramid ``asset path``.
@@ -26,11 +26,16 @@ class Mutator(object):
                          mutator dictionary to be used (e.g.
                          ``{'cmd': 'lessc', 'ext': 'css'}``)
         
+        :type settings: dict
+        :param settings: Explicitly pass your own settings dict, rather than
+                         getting the settings from ``request.registry`` (usually
+                         only used in combination with batch processing).
+        
         :type batch: bool
-        :param batch: Specify that the class should prepare for a batch
-                      compile rather than a normal compile.
+        :param batch: Specify that the class should perform batch processing
+                      rather than request-based processing.
         """
-        self.settings = app_settings
+        self.settings = kw.get('settings') or request.registry.settings
         self.path = path
         
         self.mutators = self.settings.get('assetmutator.mutators')
@@ -39,7 +44,7 @@ class Mutator(object):
         self.mutated_path = self.settings['assetmutator.mutated_path']
         if self.mutated_path and not self.mutated_path.endswith(os.sep):
             self.mutated_path += os.sep
-        self.mutator = kw.get('mutator', None)
+        self.mutator = kw.get('mutator')
         
         if (not self.mutators or not isinstance(self.mutators, dict)) and \
            not self.mutator:
@@ -69,7 +74,6 @@ class Mutator(object):
             if not os.path.isdir(self.fullpath):
                 raise EnvironmentError('Directory does not exist: %s' % \
                                        self.fullpath)
-        
         else:
             self.filename = os.path.basename(self.fullpath)
             self.dirname = os.path.dirname(self.fullpath)
@@ -82,10 +86,37 @@ class Mutator(object):
             else:
                 self.mutator = self.mutators.get(self.ext, {})
             
-            
+            # Make sure an appropriate mutator is defined
             if not self.mutator.get('cmd') or not self.mutator.get('ext'):
-                raise ValueError('No mutator found for %s' % self.ext)
-    
+                raise ValueError('No mutator found for %s.' % self.ext)
+            
+            # Configure various check/path settings
+            new_ext = self.mutator['ext']
+            
+            if self.check_method == 'exists':
+                self.new_filename = '%s%s.%s' % (self.prefix, self.name,
+                                                 new_ext)
+            elif self.check_method == 'checksum':
+                self.checksum = self.checksum or \
+                                self._compute_checksum(self.fullpath)
+                self.new_filename = '%s%s.%s.%s' % (self.prefix, self.name,
+                                                    self.checksum, new_ext)
+            else: # self.check_method == 'mtime'
+                self.mtime = self.mtime or self._get_mtime(self.fullpath)
+                self.new_filename = '%s%s.%s.%s' % (self.prefix, self.name,
+                                                    self.mtime, new_ext)
+            
+            self.new_fullpath = os.path.join(
+                self.mutated_dirpath or self.dirname,
+                self.new_filename
+            )
+            
+            if self.mutated_path:
+                self.new_path = self.mutated_path + self.new_filename
+            else:
+                self.new_path = re.sub(r'%s$' % self.filename,
+                                                self.new_filename,
+                                                self.path)
     
     @property
     def mutated(self):
@@ -93,29 +124,6 @@ class Mutator(object):
         Property method to check and see if the initialized asset path has
         already been mutated.
         """
-        new_ext = self.mutator['ext']
-        
-        if self.check_method == 'exists':
-            self.new_filename = '%s%s.%s' % (self.prefix, self.name, new_ext)
-        elif self.check_method == 'checksum':
-            self.checksum = self.checksum or \
-                            self._compute_checksum(self.fullpath)
-            self.new_filename = '%s%s.%s.%s' % (self.prefix, self.name,
-                                                self.checksum, new_ext)
-        else: # self.check_method == 'mtime'
-            self.mtime = self.mtime or self._get_mtime(self.fullpath)
-            self.new_filename = '%s%s.%s.%s' % (self.prefix, self.name,
-                                                self.mtime, new_ext)
-        
-        self.new_fullpath = os.path.join(self.mutated_dirpath or self.dirname,
-                                         self.new_filename)
-        
-        if self.mutated_path:
-            self.new_path = self.mutated_path + self.new_filename
-        else:
-            self.new_path = re.sub(r'%s$' % self.filename, self.new_filename,
-                                            self.path)
-        
         self.exists = self.exists or self._check_exists(self.new_fullpath)
         
         return self.exists
@@ -132,7 +140,7 @@ class Mutator(object):
             for chunk in iter(lambda: f.read(128*md5.block_size), b''):
                 md5.update(chunk)
         # Finally, add the mtime
-        md5.update(str(os.path.getmtime(path)))
+        md5.update(str(os.path.getmtime(path)).encode('utf-8'))
         
         # Get the first 12 characters of the hexdigest
         self.checksum = md5.hexdigest()[:12]
@@ -176,7 +184,7 @@ class Mutator(object):
             if not os.path.exists(new_dirname):
                 os.makedirs(new_dirname)
             
-            with open(self.new_fullpath, 'w') as f:
+            with open(self.new_fullpath, 'wb') as f:
                 f.write(out)
             
             self.exists = True
@@ -230,7 +238,7 @@ class Mutator(object):
                         if not os.path.exists(new_dirname):
                             os.makedirs(new_dirname)
                         
-                        with open(new_fullpath, 'w') as f:
+                        with open(new_fullpath, 'wb') as f:
                             f.write(out)
     
     def mutated_data(self):

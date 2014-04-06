@@ -4,7 +4,7 @@ pyramid_assetmutator
 Overview
 --------
 
-``pyramid_assetmutator`` provides simple and flexible asset mutation (also known
+``pyramid_assetmutator`` provides simple and dynamic asset mutation (also known
 as compiling or piping) for your Pyramid_ applications.
 
 Inspired by other more powerful asset management packages, its goal is to
@@ -43,16 +43,16 @@ project's ``__init__.py``:
     config = Configurator(...)
     config.include('pyramid_assetmutator')
 
-Next, you must assign one or more *mutators* via the new
+Next, you must assign one or more *mutators* via the newly injected
 :meth:`~pyramid_assetmutator.assign_assetmutator` configuration method, so that
-it knows what type of assets you want mutated. The configuration syntax for your
-Pyramid project's ``__init__.py`` is::
+your application can know what kind of assets you'll be asking it to mutate. The
+configuration syntax for your Pyramid project's ``__init__.py`` is::
 
-    config.assign_assetmutator('CURRENT EXTENSION', 'COMMAND', 'NEW EXTENSION')
+    config.assign_assetmutator('SOURCE EXTENSION', 'COMMAND', 'OUTPUT EXTENSION')
 
 For example, the following configuration would activate ``pyramid_assetmutator``
-and initialize mutators for CoffeeScript and LESS files (allowing them to be
-compiled into the appropriate JavaScript and CSS):
+in your app, and initialize mutators for CoffeeScript and LESS files (allowing
+them to be compiled into the appropriate JavaScript and CSS):
 
 .. code-block:: python
 
@@ -65,26 +65,17 @@ compiled into the appropriate JavaScript and CSS):
 Usage
 -----
 
-Once you have configured your mutators, you can use one of the provided view
-helper methods in your templates to reference (with Pyramid's `asset
-specification`_ syntax) and "mutate" (if needed) an asset.
+Once you have included the module and configured your mutators, you will then be
+able to call one of the following view helper methods in your templates to
+*reference* (with Pyramid's `asset specification`_ syntax) and *"mutate"* (if
+needed) an asset:
 
-Four view helper methods are provided depending on your desired results:
+.. automodule:: pyramid_assetmutator
+  :noindex:
 
-    .. automodule:: pyramid_assetmutator
-        :noindex:
-
-    .. autofunction:: assetmutator_url
-        :noindex:
-
-    .. autofunction:: assetmutator_path
-        :noindex:
-
-    .. autofunction:: assetmutator_source
-        :noindex:
-
-    .. autofunction:: assetmutator_assetpath
-        :noindex:
+.. autoclass:: AssetMutator
+  :noindex:
+  :members:
 
 .. _asset specification: http://pyramid.readthedocs.org/en/latest/glossary.html#term-asset-specification
 
@@ -189,7 +180,8 @@ file (in the app section representing your Pyramid app) using the
 ``assetmutator`` key:
 
     ``assetmutator.remutate_check``
-        *Default: mtime*
+        :Default: mtime
+        :Options: exists | mtime | checksum
         
         Specifies what type of method to use for checking to see if an asset
         source has been updated and should be re-mutated. If set to ``exists``
@@ -200,12 +192,12 @@ file (in the app section representing your Pyramid app) using the
         contents will be checked.
 
     ``assetmutator.asset_prefix``
-        *Default: _*
+        :Default: _
         
         A prefix to add to the mutated asset filename.
 
     ``assetmutator.mutated_path``
-        *Default: [none]*
+        :Default: None
         
         By default, mutated files are stored in the same directory as their
         source files. If you would like to have all mutated files stored in a
@@ -217,14 +209,14 @@ file (in the app section representing your Pyramid app) using the
                   the application.
 
     ``assetmutator.each_request``
-        *Default: true*
+        :Default: true
         
         Whether or not assets should be checked/mutated during each request
         when the template language encounters one of the ``assetmutator_*``
         methods.
 
     ``assetmutator.each_boot``
-        *Default: false*
+        :Default: false
         
         Whether or not assets should be checked/mutated when the application
         boots (uses Pyramid's :class:`~pyramid.events.ApplicationCreated`
@@ -234,7 +226,7 @@ file (in the app section representing your Pyramid app) using the
                   be checked (see below).
 
     ``assetmutator.asset_paths``
-        *Default: [none]*
+        :Default: None
         
         Which path(s) should be checked/mutated when the application boots
         (only loaded if ``assetmutator.each_boot`` is set to true).

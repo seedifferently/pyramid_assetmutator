@@ -4,5 +4,7 @@
 -------------------------------
 
 .. automodule:: pyramid_assetmutator
-   :members:
+  :members:
 
+.. autoclass:: AssetMutator
+  :members:

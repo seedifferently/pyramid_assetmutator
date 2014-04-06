@@ -107,10 +107,15 @@ html_theme = 'pyramid'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = dict(github_url='http://github.com/seedifferently/pyramid_assetmutator')
+html_theme_options = dict(
+    github_url='http://github.com/seedifferently/pyramid_assetmutator'
+)
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = ['_themes']
+
+# The style sheet to use for HTML pages.
+html_style = 'pyramid_assetmutator.css'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -264,6 +269,5 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/', None),
     'pyramid': ('http://pyramid.readthedocs.org/en/latest/', None)
 }

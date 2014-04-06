@@ -12,6 +12,8 @@ from pyramid.threadlocal import get_current_request
 from pyramid_assetmutator.utils import as_string, as_list
 from pyramid_assetmutator.mutator import Mutator
 
+__version__ = '0.2'
+
 SETTINGS_PREFIX = 'assetmutator.'
 
 default_settings = (
@@ -70,164 +72,168 @@ def assign_assetmutator(config, ext, cmd, new_ext):
     """
     mutators[ext] = dict(cmd=cmd, ext=new_ext)
 
-def assetmutator_url(path, **kw):
-    """
-    Returns a Pyramid :meth:`~pyramid.request.Request.static_url` of the mutated
-    asset (and mutates the asset if needed).
+class AssetMutator(object):
+    def __init__(self, request):
+        self.request = request
     
-    :param path: The Pyramid asset path to process.
-    :type path: string - Required
-    
-    :type mutator: dict or string - Optional
-    :param mutator: Allows you to override/specify a specific mutator to use
-                     (e.g. ``coffee``), or assign a brand new mutator
-                     dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
-                     'css'}``)
-    """
-    request = get_current_request()
-    settings = request.registry.settings
-    
-    mutant = Mutator(settings, path, **kw)
-    
-    if not settings['assetmutator.each_request']:
-        if not mutant.mutated:
-            # TODO: Error?
-            pass
+    def assetmutator_url(self, path, **kw):
+        """
+        Returns a Pyramid :meth:`~pyramid.request.Request.static_url` of the
+        mutated asset (and mutates the asset if needed).
         
-        return request.static_url(mutant.new_path)
-    else:
-        if mutant.mutated:
+        :param path: The Pyramid asset path to process.
+        :type path: string - Required
+        
+        :type mutator: dict or string - Optional
+        :param mutator: Allows you to override/specify a specific mutator to use
+                         (e.g. ``coffee``), or assign a brand new mutator
+                         dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
+                         'css'}``)
+        """
+        request = self.request
+        
+        mutant = Mutator(request, path, **kw)
+        
+        if not request.registry.settings['assetmutator.each_request']:
+            if not mutant.mutated:
+                # TODO: Error?
+                pass
+            
             return request.static_url(mutant.new_path)
         else:
-            return request.static_url(mutant.process())
-
-
-def assetmutator_path(path, **kw):
-    """
-    Returns a Pyramid :meth:`~pyramid.request.Request.static_path` of the
-    mutated asset (and mutates the asset if needed).
+            if mutant.mutated:
+                return request.static_url(mutant.new_path)
+            else:
+                return request.static_url(mutant.process())
     
-    :param path: The Pyramid asset path to process.
-    :type path: string - Required
-    
-    :type mutator: dict or string - Optional
-    :param mutator: Allows you to override/specify a specific mutator to use
-                     (e.g. ``coffee``), or assign a brand new mutator
-                     dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
-                     'css'}``)
-    """
-    request = get_current_request()
-    settings = request.registry.settings
-    
-    mutant = Mutator(settings, path, **kw)
-    
-    if not settings['assetmutator.each_request']:
-        if not mutant.mutated:
-            # TODO: Error?
-            pass
+    def assetmutator_path(self, path, **kw):
+        """
+        Returns a Pyramid :meth:`~pyramid.request.Request.static_path` of the
+        mutated asset (and mutates the asset if needed).
         
-        return request.static_path(mutant.new_path)
-    else:
-        if mutant.mutated:
+        :param path: The Pyramid asset path to process.
+        :type path: string - Required
+        
+        :type mutator: dict or string - Optional
+        :param mutator: Allows you to override/specify a specific mutator to use
+                         (e.g. ``coffee``), or assign a brand new mutator
+                         dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
+                         'css'}``)
+        """
+        request = self.request
+        
+        mutant = Mutator(request, path, **kw)
+        
+        if not request.registry.settings['assetmutator.each_request']:
+            if not mutant.mutated:
+                # TODO: Error?
+                pass
+            
             return request.static_path(mutant.new_path)
         else:
-            return request.static_path(mutant.process())
-
-def assetmutator_source(path, **kw):
-    """
-    Returns the source data/contents of the mutated asset (and mutates the
-    asset if needed). This is useful when you want to output inline data (e.g.
-    for inline JavaScript blocks).
+            if mutant.mutated:
+                return request.static_path(mutant.new_path)
+            else:
+                return request.static_path(mutant.process())
     
-    :param path: The Pyramid asset path to process.
-    :type path: string - Required
-    
-    :type mutator: dict or string - Optional
-    :param mutator: Allows you to override/specify a specific mutator to use
-                     (e.g. ``coffee``), or assign a brand new mutator
-                     dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
-                     'css'}``)
-    
-    .. note:: Many template packages escape output by default. Consult your
-              template language's syntax to output an unescaped string.
-    """
-    request = get_current_request()
-    settings = request.registry.settings
-    
-    mutant = Mutator(settings, path, **kw)
-    
-    if not settings['assetmutator.each_request']:
-        if not mutant.mutated:
-            # TODO: Error?
-            return None
+    def assetmutator_source(self, path, **kw):
+        """
+        Returns the source data/contents of the mutated asset (and mutates the
+        asset if needed). This is useful when you want to output inline data
+        (e.g. for inline JavaScript blocks).
         
-        return mutant.mutated_data()
-    else:
-        if mutant.mutated:
+        :param path: The Pyramid asset path to process.
+        :type path: string - Required
+        
+        :type mutator: dict or string - Optional
+        :param mutator: Allows you to override/specify a specific mutator to use
+                         (e.g. ``coffee``), or assign a brand new mutator
+                         dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
+                         'css'}``)
+        
+        .. note:: Many template packages escape output by default. Consult your
+                  template language's syntax to output an unescaped string.
+        """
+        request = self.request
+        
+        mutant = Mutator(request, path, **kw)
+        
+        if not request.registry.settings['assetmutator.each_request']:
+            if not mutant.mutated:
+                # TODO: Error?
+                return None
+            
             return mutant.mutated_data()
         else:
-            mutant.process()
-            return mutant.mutated_data()
-
-def assetmutator_assetpath(path, **kw):
-    """
-    Returns a Pyramid `asset specification`_ such as
-    ``pkg:static/path/to/file.ext`` (and mutates the asset if needed).
+            if mutant.mutated:
+                return mutant.mutated_data()
+            else:
+                mutant.process()
+                return mutant.mutated_data()
     
-    :param path: The Pyramid asset path to process.
-    :type path: string - Required
-    
-    :type mutator: dict or string - Optional
-    :param mutator: Allows you to override/specify a specific mutator to use
-                     (e.g. ``coffee``), or assign a brand new mutator
-                     dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
-                     'css'}``)
-    
-    This function could be used to nest ``pyramid_assetmutator`` calls. e.g.
-    ``assetmutator_path(assetmutator_assetpath('pkg:static/js/script.coffee'))``
-    could compile a CoffeeScript file into JS, and then further minify the JS
-    file if your mutator configuration looked something like::
-    
-        config.assign_assetmutator('coffee', 'coffee -c -p', 'js')
-        config.assign_assetmutator('js', 'uglifyjs', 'js')
-    
-    .. _asset specification: http://pyramid.readthedocs.org/en/latest/
-                             glossary.html#term-asset-specification
-    """
-    request = get_current_request()
-    settings = request.registry.settings
-    
-    mutant = Mutator(settings, path, **kw)
-    
-    if not settings['assetmutator.each_request']:
-        if not mutant.mutated:
-            # log an error
-            pass
+    def assetmutator_assetpath(self, path, **kw):
+        """
+        Returns a Pyramid `asset specification`_ such as
+        ``pkg:static/path/to/file.ext`` (and mutates the asset if needed).
         
-        return mutant.new_path
-    else:
-        if mutant.mutated:
+        :param path: The Pyramid asset path to process.
+        :type path: string - Required
+        
+        :type mutator: dict or string - Optional
+        :param mutator: Allows you to override/specify a specific mutator to use
+                         (e.g. ``coffee``), or assign a brand new mutator
+                         dictionary to be used (e.g. ``{'cmd': 'lessc', 'ext':
+                         'css'}``)
+        
+        This function could be used to nest ``pyramid_assetmutator`` calls. e.g.
+        ``assetmutator_path(assetmutator_assetpath('pkg:static/js/script.coffee'))``
+        could compile a CoffeeScript file into JS, and then further minify the
+        JS file if your mutator configuration looked something like::
+        
+            config.assign_assetmutator('coffee', 'coffee -c -p', 'js')
+            config.assign_assetmutator('js', 'uglifyjs', 'js')
+        
+        .. _asset specification: http://pyramid.readthedocs.org/en/latest/
+                                 glossary.html#term-asset-specification
+        """
+        request = self.request
+        
+        mutant = Mutator(request, path, **kw)
+        
+        if not request.registry.settings['assetmutator.each_request']:
+            if not mutant.mutated:
+                # TODO: log an error?
+                pass
+            
             return mutant.new_path
         else:
-            return mutant.process()
+            if mutant.mutated:
+                return mutant.new_path
+            else:
+                return mutant.process()
 
 
 def applicationcreated_subscriber(event):
-    settings = event.app.registry.settings
-    settings['assetmutator.mutators'] = mutators
+    app = event.app
+    app.registry.settings['assetmutator.mutators'] = mutators
     
-    if settings['assetmutator.each_boot']:
-        asset_paths = settings['assetmutator.asset_paths']
+    if app.registry.settings['assetmutator.each_boot']:
+        request = app.request_factory.blank('/')
+        asset_paths = app.registry.settings['assetmutator.asset_paths']
         
         for asset_path in asset_paths:
-            mutator = Mutator(settings, asset_path, batch=True)
+            mutator = Mutator(request, asset_path,
+                              settings=app.registry.settings, batch=True)
             mutator.batch_process()
 
 def beforerender_subscriber(event):
-    event['assetmutator_url'] = assetmutator_url
-    event['assetmutator_path'] = assetmutator_path
-    event['assetmutator_source'] = assetmutator_source
-    event['assetmutator_assetpath'] = assetmutator_assetpath
+    request = event['request']
+    
+    event['assetmutator_url'] = AssetMutator(request).assetmutator_url
+    event['assetmutator_path'] = AssetMutator(request).assetmutator_path
+    event['assetmutator_source'] = AssetMutator(request).assetmutator_source
+    event['assetmutator_assetpath'] = \
+        AssetMutator(request).assetmutator_assetpath
 
 def includeme(config):
     """

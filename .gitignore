@@ -1,8 +1,9 @@
 *.pyc
 .coverage
-MANIFEST
-/tests/
 /build/
 /dist/
-*.egg-info/
+*.egg
+*.egg-info
+.tox
+/pyramid_assetmutator/tests/fixtures/_*
 TODO.rst

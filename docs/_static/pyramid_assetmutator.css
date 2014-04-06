@@ -1,0 +1,5 @@
+@import url("pylons.css");
+
+#usage > dl.class > dt {
+  display: none;
+}

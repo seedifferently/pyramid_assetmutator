@@ -2,6 +2,9 @@
 pyramid_assetmutator v0.2
 ================================================================================
 
+.. image:: https://travis-ci.org/seedifferently/pyramid_assetmutator.svg?branch=master
+  :target: https://travis-ci.org/seedifferently/pyramid_assetmutator
+
 | Copyright: (c) 2014 Seth Davis
 | http://github.com/seedifferently/pyramid_assetmutator
 

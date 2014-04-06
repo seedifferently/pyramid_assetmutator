@@ -1,5 +1,5 @@
 ================================================================================
-pyramid_assetmutator v0.2
+Pyramid AssetMutator v0.2
 ================================================================================
 
 .. image:: https://travis-ci.org/seedifferently/pyramid_assetmutator.svg?branch=master
@@ -12,8 +12,15 @@ pyramid_assetmutator v0.2
 Synopsis
 ================================================================================
 
-pyramid_assetmutator provides dynamic asset mutation for your Pyramid
-applications.
+Pyramid AssetMutator provides simple and dynamic asset mutation (also known as
+compiling or piping) for your Pyramid_ applications.
+
+Inspired by other more powerful asset management packages, its goal is to
+provide a basic and straightforward mechanism for asset *compilation* (e.g.
+CoffeeScript/LESS), *minification* (e.g. jsmin), and *optimization* (e.g.
+pngcrush).
+
+.. _Pyramid: http://www.pylonsproject.org/
 
 
 Installation

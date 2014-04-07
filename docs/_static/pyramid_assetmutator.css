@@ -1,5 +1,6 @@
 @import url("pylons.css");
 
-#usage > dl.class > dt {
+#usage > dl.class > dt,
+#usage > dl.class .method .descclassname {
   display: none;
 }

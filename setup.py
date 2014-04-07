@@ -54,6 +54,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Framework :: Pyramid',
         'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Internet :: WWW/HTTP :: WSGI :: Application'
+        'Topic :: Internet :: WWW/HTTP :: WSGI',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content'
     ]
 )

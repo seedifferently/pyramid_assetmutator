@@ -1,19 +1,18 @@
 import os, sys
 from setuptools import setup, find_packages
-import pyramid_assetmutator
 
 # Package requirements
 install_requires = [
-    'pyramid>=1.3dev',
+    'pyramid >= 1.3',
 ]
-
 # If less than Python v2.7, we'll also need the `ordereddict` package
 if sys.version_info[:2] < (2, 7):
     install_requires.append('ordereddict')
 
 # Package requirements for testing
 tests_require = install_requires[:]
-tests_require.extend(['nose', 'coverage', 'webtest', 'pyramid_chameleon'])
+tests_require.extend(['nose', 'coverage', 'webtest', 'pyramid_chameleon',
+                      'pyramid_jinja2'])
 
 # Prepare README and CHANGES description info
 here = os.path.abspath(os.path.dirname(__file__))
@@ -24,7 +23,7 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
 
 setup(
     name='pyramid_assetmutator',
-    version=pyramid_assetmutator.__version__,
+    version='0.3',
     author='Seth Davis',
     author_email='seth@curiasolutions.com',
     description='Dynamic asset mutation for Pyramid. Easily adds support ' + \

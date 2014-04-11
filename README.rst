@@ -1,5 +1,5 @@
 ================================================================================
-Pyramid AssetMutator v0.2
+Pyramid AssetMutator v0.3
 ================================================================================
 
 .. image:: https://travis-ci.org/seedifferently/pyramid_assetmutator.svg?branch=master
@@ -19,6 +19,11 @@ Inspired by other more powerful asset management packages, its goal is to
 provide a basic and straightforward mechanism for asset *compilation* (e.g.
 CoffeeScript/LESS), *minification* (e.g. jsmin), and *optimization* (e.g.
 pngcrush).
+
+As of version 0.3, it also adds experimental support for template language
+parsing (e.g. you could use view helpers like `request.route_url()` in your
+CoffeeScript by installing the `pyramid_jinja2` package and using
+application.coffee.jinja2 as the asset source filename).
 
 .. _Pyramid: http://www.pylonsproject.org/
 
@@ -48,6 +53,7 @@ Known Issues and Limitations
 * Experimental support for Py3k/pypy.
 * Doesn't clean up after itself (compiled/mutated assets aren't removed
   automatically).
+* Mutator "commands" must print to stdout (see the documentation for more info).
 * Hopefully obvious, but you have to actually have the specified compiler
   command installed and accessible from your working path in order for it to
   work.

@@ -1,0 +1,1 @@
+${structure: assetmutator_source('pyramid_assetmutator.tests:fixtures/test.json.pt')}

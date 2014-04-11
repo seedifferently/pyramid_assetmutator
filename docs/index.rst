@@ -12,6 +12,11 @@ provide a basic and straightforward mechanism for asset *compilation* (e.g.
 CoffeeScript/LESS), *minification* (e.g. jsmin), and *optimization* (e.g.
 pngcrush).
 
+As of version 0.3, it also adds experimental support for template language
+parsing (e.g. you could use view helpers like `request.route_url()` in your
+CoffeeScript by installing the `pyramid_jinja2` package and using
+application.js.coffee.jinja2 as the asset source filename).
+
 .. warning:: This package only supports Pyramid 1.3 or later.
 
 .. _Pyramid: http://www.pylonsproject.org/
@@ -80,6 +85,31 @@ needed) an asset:
 .. _asset specification: http://pyramid.readthedocs.org/en/latest/glossary.html#term-asset-specification
 
 
+Template Language Parsing
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In version 0.3, experimental support for template language parsing was added. As
+long as the template language is known to Pyramid (e.g. one of `these bindings`_
+has been configured), you can append the expected template filename extension to
+your asset filename and it will attempt to parse it before mutation.
+
+For example, if the `pyramid_jinja2` package was configured, you could specify
+an asset path to an asset named `application.coffee.jinja2` and
+`pyramid_assetmutator` would run it through the Jinja2 renderer before mutation.
+
+.. warning:: Current support is experimental, and there are a few caveats:
+
+  1. You must specify a `mutated_path` in your configuration so that the
+     intermediate-step sources can be stored and parsed from that directory.
+  2. Template parsing is currently only supported when using the `each_request`
+     configuration (which is the default configuration).
+  3. Hopefully obvious, but if the asset you are parsing uses a syntax that
+     conflicts with the tempate language's syntax, things probably won't work
+     out very well for you.
+
+.. _these bindings: https://pyramid.readthedocs.org/en/latest/narr/templates.html#available-add-on-template-system-bindings
+
+
 Examples
 ~~~~~~~~
 
@@ -105,6 +135,13 @@ use ``uglifyjs`` for a particular asset:
 .. code-block:: xml
 
     <script src="${assetmutator_url('pkg:static/js/test.js', mutator={'cmd': 'uglifyjs', 'ext': 'js'})}"
+            type="text/javascript"></script>
+
+As of version 0.3, your asset source could be parsed with Chameleon as well:
+
+.. code-block:: xml
+
+    <script src="${assetmutator_url('pkg:static/js/test.coffee.pt')}"
             type="text/javascript"></script>
 
 Lastly, :meth:`~pyramid_assetmutator.assetmutator_assetpath` is a particularly
@@ -182,7 +219,7 @@ file (in the app section representing your Pyramid app) using the
     ``assetmutator.remutate_check``
         :Default: mtime
         :Options: exists | mtime | checksum
-        
+
         Specifies what type of method to use for checking to see if an asset
         source has been updated and should be re-mutated. If set to ``exists``
         (fastest, but not usually ideal), then it will only check to see if a
@@ -193,44 +230,44 @@ file (in the app section representing your Pyramid app) using the
 
     ``assetmutator.asset_prefix``
         :Default: _
-        
+
         A prefix to add to the mutated asset filename.
 
     ``assetmutator.mutated_path``
         :Default: None
-        
+
         By default, mutated files are stored in the same directory as their
         source files. If you would like to have all mutated files stored in a
         specific directory, you can define a Pyramid asset specification here
         (e.g. ``pkg:static/cache/``).
-        
+
         .. note:: The specified path must be a valid `asset specification`_ that
                   matches a configured `static view`_, and must be writable by
                   the application.
 
     ``assetmutator.each_request``
         :Default: true
-        
+
         Whether or not assets should be checked/mutated during each request
         when the template language encounters one of the ``assetmutator_*``
         methods.
 
     ``assetmutator.each_boot``
         :Default: false
-        
+
         Whether or not assets should be checked/mutated when the application
         boots (uses Pyramid's :class:`~pyramid.events.ApplicationCreated`
         event).
-        
+
         .. note:: If set to true, then you must specify the ``asset_paths`` to
                   be checked (see below).
 
     ``assetmutator.asset_paths``
         :Default: None
-        
+
         Which path(s) should be checked/mutated when the application boots
         (only loaded if ``assetmutator.each_boot`` is set to true).
-        
+
         .. note:: Asset path checks are not recursive, so you must explicitly
                   specify each path that you want checked.
 
@@ -247,7 +284,7 @@ something like:
     assetmutator.mutated_path = myapp:static/cache/
     assetmutator.each_request = false
     assetmutator.each_boot = true
-    assetmutator.asset_paths = 
+    assetmutator.asset_paths =
         myapp:static/js
         myapp:static/css
 

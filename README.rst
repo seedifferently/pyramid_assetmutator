@@ -1,11 +1,11 @@
 ================================================================================
-Pyramid AssetMutator v0.3
+Pyramid AssetMutator v0.4
 ================================================================================
 
 .. image:: https://travis-ci.org/seedifferently/pyramid_assetmutator.svg?branch=master
   :target: https://travis-ci.org/seedifferently/pyramid_assetmutator
 
-| Copyright: (c) 2014 Seth Davis
+| Copyright: (c) 2016 Seth Davis
 | http://github.com/seedifferently/pyramid_assetmutator
 
 
@@ -44,7 +44,7 @@ To install, simply::
 Documentation
 ================================================================================
 
-You can read the documentation at: http://pyramid_assetmutator.readthedocs.org/
+You can read the documentation at: https://pyramid-assetmutator.readthedocs.io/
 
 
 Known Issues and Limitations

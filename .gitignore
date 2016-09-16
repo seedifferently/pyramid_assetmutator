@@ -6,4 +6,5 @@
 *.egg-info
 .tox
 /pyramid_assetmutator/tests/fixtures/_*
+.python-version
 TODO.rst

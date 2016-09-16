@@ -1,4 +1,5 @@
-# vim:fileencoding=utf-8:ai:ts=4:sts:et:sw=4:tw=80:
+import os
+from pyramid.path import AssetResolver
 from pyramid_assetmutator.compat import string_types
 
 def as_string(value):
@@ -19,3 +20,15 @@ def as_list(value):
         subvalues = value.split()
         result.extend(subvalues)
     return result
+
+def get_abspath(path):
+    """
+    Convenience method to compute the absolute path from an assetpath.
+    """
+    resolver = AssetResolver()
+
+    if not os.path.isabs(path):
+        # Try to resolve the asset full path
+        path = resolver.resolve(path).abspath()
+
+    return path

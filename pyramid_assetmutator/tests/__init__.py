@@ -1,4 +1,3 @@
-# vim:fileencoding=utf-8:ai:ts=4:sts:et:sw=4:tw=80:
 import sys
 import os
 import hashlib
@@ -32,6 +31,7 @@ class TestParseSettings(unittest.TestCase):
              'assetmutator.remutate_check':'checksum',
              'assetmutator.asset_prefix':'.',
              'assetmutator.mutated_path': 'pyramid_assetmutator:static/cache/',
+             'assetmutator.purge_mutated_path': False,
              'assetmutator.each_request': False,
              'assetmutator.each_boot': True,
              'assetmutator.asset_paths': ['pyramid_assetmutator:static/css/',
@@ -256,14 +256,6 @@ class TestPyramidMutator(unittest.TestCase):
         self.config.add_route('home', '/')
 
     def tearDown(self):
-        source = '%s/fixtures/test.json' % self.here
-        filename = '%s/fixtures/_test.txt' % self.here
-
-        self.assertTrue(os.path.exists(filename))
-        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
-
-        os.remove(filename)
-
         testing.tearDown()
 
     def test_assetmutator_url(self):
@@ -275,6 +267,12 @@ class TestPyramidMutator(unittest.TestCase):
         resp = self.app.get(resp.text.strip())
         resp.mustcontain('{"spam": "lorem", "eggs": "鸡蛋"}')
 
+        source = '%s/fixtures/test.json' % self.here
+        filename = '%s/fixtures/_test.txt' % self.here
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
     def test_assetmutator_path(self):
         template = '%s/fixtures/test_assetmutator_path.pt' % self.here
         self.config.add_view(route_name='home', view=home, renderer=template)
@@ -283,6 +281,12 @@ class TestPyramidMutator(unittest.TestCase):
         self.assertEqual(resp.text.strip(), '/static/_test.txt')
         resp = self.app.get(resp.text.strip())
         resp.mustcontain('{"spam": "lorem", "eggs": "鸡蛋"}')
+
+        source = '%s/fixtures/test.json' % self.here
+        filename = '%s/fixtures/_test.txt' % self.here
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
 
     def test_assetmutator_source(self):
         if not PY3:
@@ -295,6 +299,12 @@ class TestPyramidMutator(unittest.TestCase):
         resp = self.app.get('/')
         resp.mustcontain('{"spam": "lorem", "eggs": "鸡蛋"}')
 
+        source = '%s/fixtures/test.json' % self.here
+        filename = '%s/fixtures/_test.txt' % self.here
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
     def test_assetmutator_assetpath(self):
         template = '%s/fixtures/test_assetmutator_assetpath.pt' % self.here
         self.config.add_view(route_name='home', view=home, renderer=template)
@@ -303,7 +313,13 @@ class TestPyramidMutator(unittest.TestCase):
         self.assertEqual(resp.text.strip(),
                          'pyramid_assetmutator.tests:fixtures/_test.txt')
 
-    def test_each_boot(self):
+        source = '%s/fixtures/test.json' % self.here
+        filename = '%s/fixtures/_test.txt' % self.here
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
+    def test_each_boot_exists(self):
         self.config.registry.settings['assetmutator.each_request'] = 'false'
         self.config.registry.settings['assetmutator.each_boot'] = 'true'
         self.config.registry.settings['assetmutator.asset_paths'] = \
@@ -311,11 +327,90 @@ class TestPyramidMutator(unittest.TestCase):
              'pyramid_assetmutator.tests:fixtures/subdir']
         self.app = TestApp(self.config.make_wsgi_app())
 
+        source = '%s/fixtures/test.json' % self.here
+        filename = '%s/fixtures/_test.txt' % self.here
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
         source2 = '%s/fixtures/subdir/test2.json' % self.here
         filename2 = '%s/fixtures/subdir/_test2.txt' % self.here
         self.assertTrue(os.path.exists(filename2))
         self.assertEqual(os.path.getsize(filename2), os.path.getsize(source2))
         os.remove(filename2)
+
+        source3 = '%s/fixtures/subdir/test3.json' % self.here
+        filename3 = '%s/fixtures/subdir/_test3.txt' % self.here
+        self.assertTrue(os.path.exists(filename3))
+        self.assertEqual(os.path.getsize(filename3), os.path.getsize(source3))
+        os.remove(filename3)
+
+    def test_each_boot_mtime(self):
+        self.config.registry.settings['assetmutator.each_request'] = 'false'
+        self.config.registry.settings['assetmutator.each_boot'] = 'true'
+        self.config.registry.settings['assetmutator.remutate_check'] = 'mtime'
+        self.config.registry.settings['assetmutator.asset_paths'] = \
+            ['pyramid_assetmutator.tests:fixtures',
+             'pyramid_assetmutator.tests:fixtures/subdir']
+        self.app = TestApp(self.config.make_wsgi_app())
+
+        source = '%s/fixtures/test.json' % self.here
+        source2 = '%s/fixtures/subdir/test2.json' % self.here
+        source3 = '%s/fixtures/subdir/test3.json' % self.here
+
+        mtime = os.path.getmtime('%s/fixtures/test.json' % self.here)
+        mtime2 = os.path.getmtime('%s/fixtures/subdir/test2.json' % self.here)
+        mtime3 = os.path.getmtime('%s/fixtures/subdir/test3.json' % self.here)
+
+        filename = '%s/fixtures/_test.%s.txt' % (self.here, mtime)
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
+        filename2 = '%s/fixtures/subdir/_test2.%s.txt' % (self.here, mtime2)
+        self.assertTrue(os.path.exists(filename2))
+        self.assertEqual(os.path.getsize(filename2), os.path.getsize(source2))
+        os.remove(filename2)
+
+        filename3 = '%s/fixtures/subdir/_test3.%s.txt' % (self.here, mtime3)
+        self.assertTrue(os.path.exists(filename3))
+        self.assertEqual(os.path.getsize(filename3), os.path.getsize(source3))
+        os.remove(filename3)
+
+    def test_each_boot_checksum(self):
+        self.config.registry.settings['assetmutator.each_request'] = 'false'
+        self.config.registry.settings['assetmutator.each_boot'] = 'true'
+        self.config.registry.settings['assetmutator.remutate_check'] = \
+            'checksum'
+        self.config.registry.settings['assetmutator.asset_paths'] = \
+            ['pyramid_assetmutator.tests:fixtures',
+             'pyramid_assetmutator.tests:fixtures/subdir']
+        self.app = TestApp(self.config.make_wsgi_app())
+
+        source = '%s/fixtures/test.json' % self.here
+        source2 = '%s/fixtures/subdir/test2.json' % self.here
+        source3 = '%s/fixtures/subdir/test3.json' % self.here
+
+        checksum = compute_checksum('%s/fixtures/test.json' % self.here)
+        checksum2 = compute_checksum('%s/fixtures/subdir/test2.json' %
+                                     self.here)
+        checksum3 = compute_checksum('%s/fixtures/subdir/test3.json' %
+                                     self.here)
+
+        filename = '%s/fixtures/_test.%s.txt' % (self.here, checksum)
+        self.assertTrue(os.path.exists(filename))
+        self.assertEqual(os.path.getsize(filename), os.path.getsize(source))
+        os.remove(filename)
+
+        filename2 = '%s/fixtures/subdir/_test2.%s.txt' % (self.here, checksum2)
+        self.assertTrue(os.path.exists(filename2))
+        self.assertEqual(os.path.getsize(filename2), os.path.getsize(source2))
+        os.remove(filename2)
+
+        filename3 = '%s/fixtures/subdir/_test3.%s.txt' % (self.here, checksum3)
+        self.assertTrue(os.path.exists(filename3))
+        self.assertEqual(os.path.getsize(filename3), os.path.getsize(source3))
+        os.remove(filename3)
 
 class TestPyramidRenderedMutator(unittest.TestCase):
     def setUp(self):

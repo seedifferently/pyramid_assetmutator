@@ -1,4 +1,4 @@
-# vim:fileencoding=utf-8:ai:ts=4:sts:et:sw=4:tw=80:
+import os
 try:
     from collections import OrderedDict
 except ImportError:
@@ -9,10 +9,12 @@ from pyramid.settings import asbool
 from pyramid.events import ApplicationCreated, BeforeRender
 from pyramid.threadlocal import get_current_request
 
-from pyramid_assetmutator.utils import as_string, as_list
+from pyramid_assetmutator.utils import as_string, as_list, get_abspath
 from pyramid_assetmutator.mutator import Mutator
 
-__version__ = '0.3'
+
+__version__ = '0.4'
+
 
 SETTINGS_PREFIX = 'assetmutator.'
 
@@ -21,6 +23,7 @@ default_settings = (
     ('remutate_check', as_string, 'mtime'),
     ('asset_prefix', as_string, '_'),
     ('mutated_path', as_string, ''),
+    ('purge_mutated_path', asbool, 'false'),
     ('each_request', asbool, 'true'),
     ('each_boot', asbool, 'false'),
     ('asset_paths', as_list, ('',)),
@@ -217,6 +220,21 @@ class AssetMutator(object):
 def applicationcreated_subscriber(event):
     app = event.app
     app.registry.settings['assetmutator.mutators'] = mutators
+
+    if app.registry.settings['assetmutator.mutated_path'] \
+       and app.registry.settings['assetmutator.purge_mutated_path']:
+        path = get_abspath(app.registry.settings['assetmutator.mutated_path'])
+
+        if os.path.isdir(path):
+            for file in os.listdir(path):
+                try:
+                    file_path = os.path.join(path, file)
+
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                except:
+                    pass
+
 
     if app.registry.settings['assetmutator.each_boot']:
         request = app.request_factory.blank('/')

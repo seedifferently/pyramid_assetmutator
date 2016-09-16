@@ -103,8 +103,10 @@ an asset path to an asset named `application.coffee.jinja2` and
      intermediate-step sources can be stored and parsed from that directory.
   2. Template parsing is currently only supported when using the `each_request`
      configuration (which is the default configuration).
-  3. Hopefully obvious, but if the asset you are parsing uses a syntax that
-     conflicts with the tempate language's syntax, things probably won't work
+  3. If Pyramid's "reload_templates" setting is false, templates will _NOT_ be
+     re-processed.
+  4. Hopefully obvious, but if the asset you are parsing uses a syntax that
+     conflicts with the template language's syntax, things probably won't work
      out very well for you.
 
 .. _these bindings: https://pyramid.readthedocs.org/en/latest/narr/templates.html#available-add-on-template-system-bindings
@@ -244,6 +246,13 @@ file (in the app section representing your Pyramid app) using the
         .. note:: The specified path must be a valid `asset specification`_ that
                   matches a configured `static view`_, and must be writable by
                   the application.
+
+    ``assetmutator.purge_mutated_path``
+        :Default: false
+
+        If set to ``true`` and a valid ``mutated_path`` is specified, all files
+        will be deleted from the ``mutated_path`` when the application boots
+        (uses Pyramid's :class:`~pyramid.events.ApplicationCreated` event).
 
     ``assetmutator.each_request``
         :Default: true

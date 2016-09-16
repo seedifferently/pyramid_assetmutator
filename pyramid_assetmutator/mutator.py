@@ -1,8 +1,8 @@
-# vim:fileencoding=utf-8:ai:ts=4:sts:et:sw=4:tw=80:
 import os, re, glob, shlex, subprocess, hashlib
 from pyramid.interfaces import IRendererFactory
-from pyramid.path import AssetResolver
 from pyramid.renderers import render
+from pyramid_assetmutator.utils import get_abspath
+
 
 class Mutator(object):
     """
@@ -99,12 +99,11 @@ class Mutator(object):
         """
 
         # Parse source path
-        self.src_fullpath = self._get_abspath(self.path)
+        self.src_fullpath = get_abspath(self.path)
         self.src_dirpath = os.path.dirname(self.src_fullpath)
 
         # Parse dest/mutated path (if specified)
-        self.dest_dirpath = self._get_abspath(self.mutated_path or
-                                              self.src_dirpath)
+        self.dest_dirpath = get_abspath(self.mutated_path or self.src_dirpath)
 
         # Setup various path variables
         if self.batch and not os.path.isdir(self.src_dirpath):
@@ -143,12 +142,21 @@ class Mutator(object):
                 self.dest_filename = '%s%s.%s' % (self.prefix, self.src_name,
                                                   dest_ext)
             elif self.check_method == 'checksum':
-                self.checksum = self.checksum or \
-                                self._compute_checksum(self.src_fullpath)
+                if self.batch:
+                    self.checksum = self._compute_checksum(self.src_fullpath)
+                else:
+                    self.checksum = self.checksum or \
+                                    self._compute_checksum(self.src_fullpath)
+
                 self.dest_filename = '%s%s.%s.%s' % (self.prefix, self.src_name,
                                                      self.checksum, dest_ext)
             else: # self.check_method == 'mtime'
-                self.mtime = self.mtime or self._get_mtime(self.src_fullpath)
+                if self.batch:
+                    self.mtime = self._get_mtime(self.src_fullpath)
+                else:
+                    self.mtime = self.mtime or \
+                                 self._get_mtime(self.src_fullpath)
+
                 self.dest_filename = '%s%s.%s.%s' % (self.prefix, self.src_name,
                                                      self.mtime, dest_ext)
 
@@ -166,18 +174,6 @@ class Mutator(object):
                     self.new_path = re.sub(r'%s$' % self.src_filename,
                                                     self.dest_filename,
                                                     self.path)
-
-    def _get_abspath(self, path):
-        """
-        Convenience method to compute the absolute path from an assetpath.
-        """
-        resolver = AssetResolver()
-
-        if not os.path.isabs(path):
-            # Try to resolve the asset full path
-            path = resolver.resolve(path).abspath()
-
-        return path
 
     def _compute_checksum(self, path):
         """
@@ -234,7 +230,7 @@ class Mutator(object):
         cmd = '%s %s' % (self.mutator['cmd'], self.src_fullpath)
 
         proc = subprocess.Popen(
-            shlex.split(cmd),
+            shlex.split(cmd, posix=False),
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -257,7 +253,7 @@ class Mutator(object):
         Mutate the asset(s).
         """
         if self.batch == True:
-            batch_path = self._get_abspath(self.path)
+            batch_path = get_abspath(self.path)
 
             for ext, config in self.mutators.items():
                 for asset in glob.glob(os.path.join(batch_path, '*.%s' % ext)):

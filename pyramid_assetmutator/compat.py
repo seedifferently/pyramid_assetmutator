@@ -1,4 +1,3 @@
-# vim:fileencoding=utf-8:ai:ts=4:sts:et:sw=4:tw=80:
 import sys
 
 # True if we are running on Python 3.

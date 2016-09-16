@@ -23,7 +23,7 @@ with open(os.path.join(here, 'CHANGES.rst')) as f:
 
 setup(
     name='pyramid_assetmutator',
-    version='0.3',
+    version='0.4',
     author='Seth Davis',
     author_email='seth@curiasolutions.com',
     description='Dynamic asset mutation for Pyramid. Easily adds support ' + \

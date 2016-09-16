@@ -1,5 +1,10 @@
 @import url("pylons.css");
 
+code.literal {
+  padding: 2px;
+  border: 0px;
+}
+
 #usage > dl.class > dt,
 #usage > dl.class .method .descclassname {
   display: none;

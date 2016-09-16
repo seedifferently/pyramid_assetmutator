@@ -1,6 +1,6 @@
 @import url("pylons.css");
 
-code.literal {
+code.literal, code.descname {
   padding: 2px;
   border: 0px;
 }

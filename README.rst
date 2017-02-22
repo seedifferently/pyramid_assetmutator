@@ -1,29 +1,29 @@
 ================================================================================
-Pyramid AssetMutator v0.4
+Pyramid AssetMutator v1.0b1
 ================================================================================
 
 .. image:: https://travis-ci.org/seedifferently/pyramid_assetmutator.svg?branch=master
   :target: https://travis-ci.org/seedifferently/pyramid_assetmutator
 
-| Copyright: (c) 2016 Seth Davis
-| http://github.com/seedifferently/pyramid_assetmutator
+| Copyright: (c) 2017 Seth Davis
+| http://pyramid-assetmutator.curia.solutions/
 
 
 Synopsis
 ================================================================================
 
-Pyramid AssetMutator provides simple and dynamic asset mutation (also known as
+Pyramid AssetMutator provides simple and flexible asset mutation (also known as
 compiling or piping) for your Pyramid_ applications.
 
 Inspired by other more powerful asset management packages, its goal is to
-provide a basic and straightforward mechanism for asset *compilation* (e.g.
-CoffeeScript/LESS), *minification* (e.g. jsmin), and *optimization* (e.g.
-pngcrush).
+provide Pyramid developers with a basic and straightforward mechanism for
+utilizing asset *compilation* (e.g. for CoffeeScript/Sass), *minification*
+(e.g. with jsmin), and *optimization* (e.g. with pngcrush).
 
 As of version 0.3, it also adds experimental support for template language
-parsing (e.g. you could use view helpers like `request.route_url()` in your
-CoffeeScript by installing the `pyramid_jinja2` package and using
-application.coffee.jinja2 as the asset source filename).
+parsing (e.g. you could use Pyramid helpers like ``request.route_url()`` within
+your CoffeeScript files by using ``application.coffee.pt`` as the asset source
+filename).
 
 .. _Pyramid: http://www.pylonsproject.org/
 
@@ -50,19 +50,19 @@ You can read the documentation at: https://pyramid-assetmutator.readthedocs.io/
 Known Issues and Limitations
 ================================================================================
 
-* Experimental support for Py3k/pypy.
-* Doesn't clean up after itself (compiled/mutated assets aren't removed
-  automatically).
+* Experimental support for pypy.
+* Doesn't clean up after itself by default (e.g. mutated assets aren't removed
+  automatically when the default settings are used).
 * Mutator "commands" must print to stdout (see the documentation for more info).
-* Hopefully obvious, but you have to actually have the specified compiler
+* Hopefully obvious, but you must actually have the specified source compiler
   command installed and accessible from your working path in order for it to
-  work.
+  function.
 
 
 Disclaimers and Warnings
 ================================================================================
 
-This is Alpha software--use at your own risk!
+This is Beta software--use at your own risk!
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS

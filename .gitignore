@@ -1,10 +1,33 @@
-*.pyc
-.coverage
-/build/
-/dist/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+build/
+dist/
+lib64/
+sdist/
 *.egg
-*.egg-info
-.tox
-/pyramid_assetmutator/tests/fixtures/_*
+*.egg-info/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+src/
+
+# Unit test / coverage reports
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+coverage/
+
+# Sphinx documentation
+docs/_build/
+
+# Misc
+!.gitignore
 .python-version
-TODO.rst
+/pyramid_assetmutator/tests/fixtures/_*
+TODO.txt

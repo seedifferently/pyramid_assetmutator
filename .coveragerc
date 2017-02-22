@@ -1,0 +1,7 @@
+[run]
+source = pyramid_assetmutator
+omit =
+    pyramid_assetmutator/tests/*
+
+[report]
+show_missing = True

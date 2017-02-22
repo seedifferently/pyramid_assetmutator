@@ -1,4 +1,5 @@
 import os
+import logging
 try:
     from collections import OrderedDict
 except ImportError:
@@ -13,20 +14,22 @@ from pyramid_assetmutator.utils import as_string, as_list, get_abspath
 from pyramid_assetmutator.mutator import Mutator
 
 
-__version__ = '0.4'
+__version__ = '1.0b1'
 
+
+logger = logging.getLogger(__name__)
 
 SETTINGS_PREFIX = 'assetmutator.'
 
 default_settings = (
     ('debug', asbool, 'false'),
-    ('remutate_check', as_string, 'mtime'),
-    ('asset_prefix', as_string, '_'),
+    ('remutate_check', as_string, 'stat'),
+    ('each_request', asbool, 'true'),
+    ('each_boot', as_list, ('',)),
+    ('mutated_file_prefix', as_string, '_'),
     ('mutated_path', as_string, ''),
     ('purge_mutated_path', asbool, 'false'),
-    ('each_request', asbool, 'true'),
-    ('each_boot', asbool, 'false'),
-    ('asset_paths', as_list, ('',)),
+    ('always_remutate', as_list, ('',)),
 )
 
 # Use an OrderedDict so that processing always happens in order
@@ -99,16 +102,14 @@ class AssetMutator(object):
         mutant = Mutator(request, path, rendering_val=self.rendering_val, **kw)
 
         if not request.registry.settings['assetmutator.each_request']:
-            if not mutant.mutated:
-                # TODO: Error?
-                pass
+            if not mutant.is_mutated:
+                logger.warning(
+                    '"%s" does not appear to have been mutated yet.' % path
+                )
 
             return request.static_url(mutant.new_path)
         else:
-            if mutant.mutated:
-                return request.static_url(mutant.new_path)
-            else:
-                return request.static_url(mutant.mutate())
+            return request.static_url(mutant.mutate())
 
     def assetmutator_path(self, path, **kw):
         """
@@ -129,16 +130,14 @@ class AssetMutator(object):
         mutant = Mutator(request, path, rendering_val=self.rendering_val, **kw)
 
         if not request.registry.settings['assetmutator.each_request']:
-            if not mutant.mutated:
-                # TODO: Error?
-                pass
+            if not mutant.is_mutated:
+                logger.warning(
+                    '"%s" does not appear to have been mutated yet.' % path
+                )
 
             return request.static_path(mutant.new_path)
         else:
-            if mutant.mutated:
-                return request.static_path(mutant.new_path)
-            else:
-                return request.static_path(mutant.mutate())
+            return request.static_path(mutant.mutate())
 
     def assetmutator_source(self, path, **kw):
         """
@@ -163,17 +162,16 @@ class AssetMutator(object):
         mutant = Mutator(request, path, rendering_val=self.rendering_val, **kw)
 
         if not request.registry.settings['assetmutator.each_request']:
-            if not mutant.mutated:
-                # TODO: Error?
+            if not mutant.is_mutated:
+                logger.error(
+                    '"%s" does not appear to have been mutated yet.' % path
+                )
                 return None
 
             return mutant.mutated_data()
         else:
-            if mutant.mutated:
-                return mutant.mutated_data()
-            else:
-                mutant.mutate()
-                return mutant.mutated_data()
+            mutant.mutate()
+            return mutant.mutated_data()
 
     def assetmutator_assetpath(self, path, **kw):
         """
@@ -205,16 +203,14 @@ class AssetMutator(object):
         mutant = Mutator(request, path, rendering_val=self.rendering_val, **kw)
 
         if not request.registry.settings['assetmutator.each_request']:
-            if not mutant.mutated:
-                # TODO: log an error?
-                pass
+            if not mutant.is_mutated:
+                logger.warning(
+                    '"%s" does not appear to have been mutated yet.' % path
+                )
 
             return mutant.new_path
         else:
-            if mutant.mutated:
-                return mutant.new_path
-            else:
-                return mutant.mutate()
+            return mutant.mutate()
 
 
 def applicationcreated_subscriber(event):
@@ -238,10 +234,9 @@ def applicationcreated_subscriber(event):
 
     if app.registry.settings['assetmutator.each_boot']:
         request = app.request_factory.blank('/')
-        asset_paths = app.registry.settings['assetmutator.asset_paths']
 
-        for asset_path in asset_paths:
-            mutant = Mutator(request, asset_path, registry=app.registry,
+        for asset_spec in app.registry.settings['assetmutator.each_boot']:
+            mutant = Mutator(request, asset_spec, registry=app.registry,
                              batch=True)
             mutant.mutate()
 

@@ -1,7 +1,13 @@
-import os, re, glob, shlex, subprocess, hashlib
+import os
+import re
+import glob
+import shlex
+import subprocess
+from fnmatch import fnmatch
 from pyramid.interfaces import IRendererFactory
 from pyramid.renderers import render
-from pyramid_assetmutator.utils import get_abspath
+from pyramid_assetmutator.utils import get_abspath, get_stat, hexhashify, \
+                                       compute_md5
 
 
 class Mutator(object):
@@ -62,20 +68,22 @@ class Mutator(object):
         self.rendering_val = kw.get('rendering_val', {})
 
         self.mutators = self.settings.get('assetmutator.mutators')
-        self.prefix = self.settings['assetmutator.asset_prefix']
+        self.prefix = self.settings['assetmutator.mutated_file_prefix']
         self.check_method = self.settings['assetmutator.remutate_check']
         self.mutated_path = self.settings['assetmutator.mutated_path']
+        self.always_remutate = self.settings['assetmutator.always_remutate']
+
         if self.mutated_path and not self.mutated_path.endswith(os.sep):
             self.mutated_path += os.sep
         self.mutator = kw.get('mutator')
 
         if (not self.mutators or not isinstance(self.mutators, dict)) and \
            not self.mutator:
-            raise ValueError('No mutators were found.')
+            raise RuntimeError('No mutators were found.')
 
         self.batch = kw.get('batch', False)
         self.checksum = None
-        self.mtime = None
+        self.stat = None
         self.exists = False
         self.dest_dirpath = None
         self.parse_template = False
@@ -84,130 +92,97 @@ class Mutator(object):
             self._configure_paths()
 
     @property
-    def mutated(self):
+    def is_mutated(self):
         """
         Property method to check and see if the initialized asset path has
         already been mutated.
         """
-        self.exists = self.exists or self._check_exists(self.dest_fullpath)
+        self.exists = self.exists or os.path.exists(self.dest_fullpath)
 
         return self.exists
+
+    @property
+    def should_mutate(self):
+        """
+        Checks if a ``mutant`` object should be [re]mutated.
+        """
+        if self.is_mutated is not True:
+            return True
+
+        if self.always_remutate:
+            if '*' in self.always_remutate or self.path in self.always_remutate:
+                return True
+            else:
+                for val in self.always_remutate:
+                    if fnmatch(self.path, val):
+                        return True
+
+        return False
 
     def _configure_paths(self):
         """
         Checks/sets the various path settings needed for mutation.
         """
-
-        # Parse source path
+        # Setup various path variables
         self.src_fullpath = get_abspath(self.path)
         self.src_dirpath = os.path.dirname(self.src_fullpath)
-
-        # Parse dest/mutated path (if specified)
         self.dest_dirpath = get_abspath(self.mutated_path or self.src_dirpath)
+        self.src_filename = os.path.basename(self.src_fullpath)
+        self.src_name = os.path.splitext(self.src_filename)[0]
 
-        # Setup various path variables
-        if self.batch and not os.path.isdir(self.src_dirpath):
-            raise EnvironmentError('Directory does not exist: %s' %
-                                   self.src_dirpath)
+        if self.mutated_path and \
+           os.path.splitext(self.src_filename)[-1] in self.renderers:
+            # This asset uses a template renderer
+            self.parse_template = True
+            self.src_ext = os.path.splitext(self.src_name)[-1][1:]
+            self.src_name = os.path.splitext(self.src_name)[0]
         else:
-            self.src_filename = os.path.basename(self.src_fullpath)
-            self.src_name = os.path.splitext(self.src_filename)[0]
+            self.src_ext = os.path.splitext(self.src_filename)[-1][1:]
 
-            if self.mutated_path and \
-               os.path.splitext(self.src_filename)[-1] in self.renderers:
-                # This asset uses a template renderer
-                self.parse_template = True
-                self.src_ext = os.path.splitext(self.src_name)[-1][1:]
-                self.src_name = os.path.splitext(self.src_name)[0]
-            else:
-                self.src_ext = os.path.splitext(self.src_filename)[-1][1:]
-
-
-            # Get/setup the mutator
-            if self.mutator:
-                if not isinstance(self.mutator, dict):
-                    self.mutator = self.mutators.get(self.mutator, {})
-            else:
-                self.mutator = self.mutators.get(self.src_ext, {})
-
-            # Make sure an appropriate mutator is defined
-            if not self.mutator.get('cmd') or not self.mutator.get('ext'):
-                raise ValueError('No mutator found for %s.' % self.src_ext)
-
-
-            # Do various check/path settings
-            dest_ext = self.mutator['ext']
-
-            if self.check_method == 'exists':
-                self.dest_filename = '%s%s.%s' % (self.prefix, self.src_name,
-                                                  dest_ext)
-            elif self.check_method == 'checksum':
-                if self.batch:
-                    self.checksum = self._compute_checksum(self.src_fullpath)
-                else:
-                    self.checksum = self.checksum or \
-                                    self._compute_checksum(self.src_fullpath)
-
-                self.dest_filename = '%s%s.%s.%s' % (self.prefix, self.src_name,
-                                                     self.checksum, dest_ext)
-            else: # self.check_method == 'mtime'
-                if self.batch:
-                    self.mtime = self._get_mtime(self.src_fullpath)
-                else:
-                    self.mtime = self.mtime or \
-                                 self._get_mtime(self.src_fullpath)
-
-                self.dest_filename = '%s%s.%s.%s' % (self.prefix, self.src_name,
-                                                     self.mtime, dest_ext)
-
-            # Set the full destination/output path
-            self.dest_fullpath = os.path.join(
-                self.dest_dirpath,
-                self.dest_filename
-            )
-
-            # Set the new assetpath to be returned to the template
-            if not self.batch:
-                if self.mutated_path:
-                    self.new_path = self.mutated_path + self.dest_filename
-                else:
-                    self.new_path = re.sub(r'%s$' % self.src_filename,
-                                                    self.dest_filename,
-                                                    self.path)
-
-    def _compute_checksum(self, path):
-        """
-        Convenience method to compute the source's checksum for the mutated
-        asset.
-        """
-        md5 = hashlib.md5()
-
-        # Loop the file, adding chunks to the MD5 generator
-        with open(path, 'rb') as f:
-            for chunk in iter(lambda: f.read(128*md5.block_size), b''):
-                md5.update(chunk)
-        # Finally, add the mtime
-        md5.update(str(os.path.getmtime(path)).encode('utf-8'))
-
-        # Get the first 12 characters of the hexdigest
-        self.checksum = md5.hexdigest()[:12]
-
-        return self.checksum
-
-    def _get_mtime(self, path):
-        """
-        Convenience method for getting the source's mtime for the mutated asset.
-        """
-        return os.path.getmtime(path)
-
-    def _check_exists(self, path):
-        """
-        Convenience method to check if a file already exists.
-        """
-        if os.path.exists(path):
-            return True
+        # Initialize the mutator
+        if self.mutator:
+            if not isinstance(self.mutator, dict):
+                self.mutator = self.mutators.get(self.mutator, {})
         else:
-            return False
+            self.mutator = self.mutators.get(self.src_ext, {})
+
+        # Make sure an appropriate mutator is defined
+        if not self.mutator.get('cmd') or not self.mutator.get('ext'):
+            raise RuntimeError('No mutator found for %s.' % self.src_ext)
+
+        dest_ext = self.mutator['ext']
+
+        # Parse the fingerprint
+        if self.check_method == 'exists':
+            fingerprint = hexhashify(self.src_fullpath)
+        elif self.check_method == 'checksum':
+            if self.batch:
+                self.checksum = compute_md5(self.src_fullpath)
+            else:
+                self.checksum = self.checksum or compute_md5(self.src_fullpath)
+
+            fingerprint = self.checksum
+        else: # self.check_method == 'stat'
+            if self.batch:
+                self.stat = get_stat(self.src_fullpath)
+            else:
+                self.stat = self.stat or get_stat(self.src_fullpath)
+
+            fingerprint = hexhashify(self.src_fullpath) + hexhashify(self.stat)
+
+        # Set the destination filename/path
+        self.dest_filename = '%s%s.%s.%s' % (self.prefix, self.src_name,
+                                             fingerprint, dest_ext)
+        self.dest_fullpath = os.path.join(self.dest_dirpath, self.dest_filename)
+
+        # Set the new assetpath to be returned to the template
+        if not self.batch:
+            if self.mutated_path:
+                self.new_path = self.mutated_path + self.dest_filename
+            else:
+                self.new_path = re.sub(r'%s$' % self.src_filename,
+                                                self.dest_filename,
+                                                self.path)
 
     def _process_template(self, source):
         """
@@ -238,30 +213,29 @@ class Mutator(object):
         data, err = proc.communicate()
 
         if proc.returncode != 0 or err:
-            raise EnvironmentError('%s\n\n%s' % (err, data))
-        else:
-            new_dirname = os.path.normpath(os.path.dirname(self.dest_fullpath))
+            errmsg = 'Return code %s when attempting to execute %s.\n\n%s\n\n%s'
+            raise EnvironmentError(errmsg % (proc.returncode,
+                                             self.mutator['cmd'], err, data))
 
-            if not os.path.exists(new_dirname):
-                os.makedirs(new_dirname)
+        new_dirname = os.path.normpath(os.path.dirname(self.dest_fullpath))
 
-            with open(self.dest_fullpath, 'wb') as f:
-                f.write(data)
+        if not os.path.exists(new_dirname):
+            os.makedirs(new_dirname)
+
+        with open(self.dest_fullpath, 'wb') as f:
+            f.write(data)
 
     def mutate(self):
         """
-        Mutate the asset(s).
+        Mutate the asset(s) and return the new asset specification path.
         """
-        if self.batch == True:
-            batch_path = get_abspath(self.path)
-
-            for ext, config in self.mutators.items():
-                for asset in glob.glob(os.path.join(batch_path, '*.%s' % ext)):
-                    self.path = asset
-                    self._configure_paths()
-                    self._run_mutator()
+        if self.batch:
+            for asset in glob.glob(get_abspath(self.path)):
+                self.path = asset
+                self._configure_paths()
+                self._run_mutator()
         else:
-            if not self.exists:
+            if self.should_mutate:
                 if self.parse_template:
                     self._process_template(self.path)
 
@@ -275,7 +249,7 @@ class Mutator(object):
         Return the mutated source of the initialized asset.
         """
         if not self.exists:
-            raise ValueError('Source not found. Has it been mutated?')
+            raise RuntimeError('Source not found. Has it been mutated?')
 
         with open(self.dest_fullpath) as f:
             data = f.read()

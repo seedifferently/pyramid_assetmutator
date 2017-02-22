@@ -44,7 +44,7 @@ To install, simply::
 Documentation
 ================================================================================
 
-You can read the documentation at: https://pyramid-assetmutator.readthedocs.io/
+You can read the documentation at: http://pyramid-assetmutator.curia.solutions/
 
 
 Known Issues and Limitations
